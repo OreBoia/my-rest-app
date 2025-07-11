@@ -1,0 +1,20 @@
+<h2>Lista Utenti</h2>
+<ul>
+  <li *ngFor="let user of users">
+    {{user.id}} {{ user.name }} ({{ user.email }})
+  </li>
+</ul>
+
+<h3>Aggiungi Utente</h3>
+<form (ngSubmit)="addUser()">
+  <input [(ngModel)]="newUser.name" name="name" placeholder="Nome" required />
+  <input [(ngModel)]="newUser.email" name="email" placeholder="Email" required />
+  <button type="submit">Aggiungi</button>
+</form>
+
+<h3>Rimuovi Utente</h3>
+<p>{{userIdToRemove}}</p>
+<form (ngSubmit)="removeUser(userIdToRemove)">
+  <input [(ngModel)]="userIdToRemove" name="id" placeholder="id to remove" type="number" required />
+  <button type="submit">rimuovi</button>
+</form>

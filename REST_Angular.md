@@ -152,7 +152,7 @@ import { User } from './user.model';
      </li>
     </ul>
 
-  <h3>Aggiungi Utente</h3>
+  <h3>Aggiungi Utente</h3>v
   <form (ngSubmit)="addUser()">
     <input [(ngModel)]="newUser.name" name="name" placeholder="Nome" required />
     <input [(ngModel)]="newUser.email" name="email" placeholder="Email" required />
@@ -161,7 +161,7 @@ import { User } from './user.model';
 })
 
 export class UsersComponent {
-  private userService = inject(UserService); // inject del servizio UserService
+    private userService = inject(UserService); // inject del servizio UserService
     users: User[] = [];
     newUser: User = { id: 0, name: '', email: '' };
     
