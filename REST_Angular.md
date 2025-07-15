@@ -82,7 +82,7 @@ export class UserService
 
 ```
 
-Nel codice sopra, `UserService` è annotato con` @Injectable({ providedIn: 'root' })` così che
+Nel codice sopra, `UserService` è annotato con`@Injectable({ providedIn: 'root' })` così che
 sia un singleton disponibile in tutta l’app. All’interno, usiamo `private http = inject(HttpClient)`
 per ottenere l’istanza di HttpClient senza passarlo dal costruttore. Questo pattern è pienamente supportato
 da Angular e rende il codice più conciso. Abbiamo definito due metodi:
@@ -228,3 +228,321 @@ Affinché questo componente funzioni nell’app, assicurati di utilizzarlo. Se U
 componente principale (bootstrap), allora nel `main.ts` bootstrapApplication punterai a questo. In
 alternativa, potresti avere un `AppComponent` che funge da shell dell’app e include `<app-users></appusers>` nel suo template (ricordando di dichiarare UsersComponent tra le sue `imports` se `AppComponent` è standalone).
 
+## Esempio di backend REST con Node.js e Express
+
+### 1. Crea una cartella per il backend
+
+Apri una cartella (es: backend-test) e aprila in VS Code o terminale.
+
+### 2. Inizializza un progetto Node.js
+
+Nel terminale, esegui il comando per inizializzare un progetto Node.js:
+
+```bash
+npm init -y
+```
+
+Questo crea un file package.json.
+
+### 3. Installa Express
+
+```bash
+npm install express cors
+```
+
+- **Express**: per creare l’API.
+
+- **CORS**: per permettere richieste da Angular.
+
+### 4. Crea il file server.js
+
+Crea un file chiamato server.js nella cartella.
+
+Esempio di backend minimale con una rotta GET e una POST su /api/users:
+
+```javascript
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const PORT = 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+let users = [
+  { id: 1, name: 'Mario Rossi' },
+  { id: 2, name: 'Luigi Bianchi' }
+];
+
+// GET tutti gli utenti
+app.get('/api/users', (req, res) => {
+  res.json(users);
+});
+
+// POST aggiungi utente
+app.post('/api/users', (req, res) => {
+  const newUser = req.body;
+  newUser.id = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
+  users.push(newUser);
+  res.json(newUser);
+});
+
+// DELETE elimina utente per id
+app.delete('/api/users/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  users = users.filter(u => u.id !== id);
+  res.json({ success: true });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server attivo su http://localhost:${PORT}`);
+});
+
+```
+
+### 5. Avvia il server
+
+Nel terminale:
+
+```bash
+node server.js
+```
+
+### Guida ai Metodi di Routing in Express (`IRouterMatcher`)
+
+In Express, il "routing" definisce come l'applicazione risponde a una richiesta del client verso un particolare endpoint, che è una combinazione di un URI (o percorso) e un metodo di richiesta HTTP (GET, POST, ecc.). I metodi come `app.get()`, `app.post()` sono implementazioni di `IRouterMatcher`, che consentono di associare una funzione (handler) a una rotta specifica.
+
+Ecco una panoramica dei metodi di routing più comuni con esempi.
+
+#### 1. `app.get(path, handler)`
+
+Risponde alle richieste HTTP GET. Viene usato per recuperare dati.
+
+```javascript
+// GET: Recupera una lista di risorse
+app.get('/api/items', (req, res) => {
+  res.json([{ id: 1, name: 'Item 1' }]);
+});
+
+// GET: Recupera una singola risorsa usando un parametro di rotta
+app.get('/api/items/:id', (req, res) => {
+  const itemId = req.params.id;
+  res.send(`Dettagli per l'item con ID: ${itemId}`);
+});
+```
+
+#### 2. `app.post(path, handler)`
+
+Risponde alle richieste HTTP POST. Viene usato per creare una nuova risorsa. I dati inviati dal client sono disponibili in `req.body` (richiede il middleware `express.json()`).
+
+```javascript
+// POST: Crea un nuovo item
+app.post('/api/items', (req, res) => {
+  const newItem = req.body;
+  console.log('Nuovo item ricevuto:', newItem);
+  res.status(201).json({ id: 2, ...newItem });
+});
+```
+
+#### 3. `app.put(path, handler)`
+
+Risponde alle richieste HTTP PUT. Viene usato per aggiornare completamente una risorsa esistente.
+
+```javascript
+// PUT: Aggiorna un item esistente
+app.put('/api/items/:id', (req, res) => {
+  const itemId = req.params.id;
+  const updatedData = req.body;
+  console.log(`Aggiornamento completo per l'item ${itemId} con`, updatedData);
+  res.send(`Item ${itemId} aggiornato.`);
+});
+```
+
+#### 4. `app.delete(path, handler)`
+
+Risponde alle richieste HTTP DELETE. Viene usato per eliminare una risorsa.
+
+```javascript
+// DELETE: Elimina un item
+app.delete('/api/items/:id', (req, res) => {
+  const itemId = req.params.id;
+  console.log(`Eliminazione dell'item ${itemId}`);
+  res.status(204).send(); // 204 No Content è una risposta comune per DELETE
+});
+```
+
+#### 5. `app.patch(path, handler)`
+
+Risponde alle richieste HTTP PATCH. Viene usato per aggiornare parzialmente una risorsa. A differenza di PUT, non è necessario inviare l'intero oggetto.
+
+```javascript
+// PATCH: Aggiorna parzialmente un item
+app.patch('/api/items/:id', (req, res) => {
+  const itemId = req.params.id;
+  const partialData = req.body;
+  console.log(`Aggiornamento parziale per l'item ${itemId} con`, partialData);
+  res.send(`Item ${itemId} aggiornato parzialmente.`);
+});
+```
+
+#### 6. `app.all(path, handler)`
+
+Questo metodo speciale risponde a **tutti** i metodi HTTP per un percorso specifico. È utile per applicare logica comune a una rotta, come l'autenticazione o il logging, prima di passare il controllo ad altri handler specifici.
+
+```javascript
+// ALL: Esegue questa funzione per qualsiasi metodo HTTP su /api/secret
+app.all('/api/secret', (req, res, next) => {
+  console.log(`Accesso alla rotta segreta con metodo ${req.method}`);
+  // Qui si potrebbe inserire un controllo di autenticazione
+  next(); // Passa il controllo all'handler successivo
+});
+
+app.get('/api/secret', (req, res) => {
+  res.send('Questo è un segreto!');
+});
+```
+
+#### 7. `app.route(path)`
+
+Fornisce un modo per creare gestori di rotta concatenabili per un singolo percorso. Questo aiuta a mantenere il codice pulito e organizzato, evitando la duplicazione del percorso.
+
+```javascript
+// Gestione concatenata per la rotta /api/documents/123
+app.route('/api/documents/:id')
+  .get((req, res) => {
+    res.send(`Recupera documento con ID: ${req.params.id}`);
+  })
+  .put((req, res) => {
+    res.send(`Aggiorna documento con ID: ${req.params.id}`);
+  })
+  .delete((req, res) => {
+    res.send(`Elimina documento con ID: ${req.params.id}`);
+  });
+```
+
+---
+
+## Connessione tra backend Node.js e server MySQL
+
+## 1. Installazione dipendenze
+
+Dentro la cartella del tuo backend Node.js:
+
+```bash
+npm install mysql2
+```
+
+mysql2 è una libreria moderna e performante per connettersi a MySQL.
+
+## 2. Crea una connessione al database
+
+Puoi usare connessione singola oppure pool di connessioni (consigliato).
+Esempio con pool:
+
+```javascript
+const mysql = require('mysql2');
+
+// Crea il pool di connessioni
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',        // il tuo utente MySQL
+  password: 'password', // la tua password MySQL
+  database: 'todo_db'   // il database che userai
+});
+
+// Trasforma in promise per usare async/await
+const db = pool.promise();
+
+module.exports = db;
+```
+
+Salva questo in un file db.js
+
+## 3. Prepara il database
+
+```sql
+CREATE DATABASE todo_db;
+
+USE todo_db;
+
+CREATE TABLE tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  completed BOOLEAN DEFAULT false
+);
+
+```
+
+## 4. Usa il database nel server Express
+
+```javascript
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const db = require('./db'); // importa la connessione
+
+const app = express();
+const port = 8080;
+
+app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(bodyParser.json());
+
+// GET tutti i task
+app.get('/api/tasks', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM tasks');
+    res.json(rows);
+  } catch (error) {
+    console.error('Errore GET tasks', error);
+    res.status(500).json({ error: 'Errore nel recupero tasks' });
+  }
+});
+
+// POST aggiungi nuovo task
+app.post('/api/tasks', async (req, res) => {
+  const { title, description } = req.body;
+  try {
+    const [result] = await db.query(
+      'INSERT INTO tasks (title, description, completed) VALUES (?, ?, ?)',
+      [title, description, false]
+    );
+    const newTask = { id: result.insertId, title, description, completed: false };
+    res.json(newTask);
+  } catch (error) {
+    console.error('Errore POST task', error);
+    res.status(500).json({ error: 'Errore creazione task' });
+  }
+});
+
+// PATCH toggle completato
+app.patch('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Toggle stato
+    await db.query('UPDATE tasks SET completed = NOT completed WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Errore PATCH task', error);
+    res.status(500).json({ error: 'Errore toggle task' });
+  }
+});
+
+// DELETE elimina task
+app.delete('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM tasks WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Errore DELETE task', error);
+    res.status(500).json({ error: 'Errore eliminazione task' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server Express + MySQL su http://localhost:${port}`);
+});
+```
