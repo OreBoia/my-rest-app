@@ -7,7 +7,7 @@ Angular 20 adotta il moderno paradigma standalone (introdotto in Angular 14), ch
 - Un componente standalone che utilizza il servizio (con `inject()` ) per mostrare una lista di utenti e aggiungerne di nuovi.
 - Gestione degli errori HTTP con gli operatori RxJS `catchError` e `throwError` .
 - Esempi pratici di chiamate GET e POST.
-- Una sezione finale sull’integrazione con un backend Spring Boot (modello `User` , repository JPA, controller REST, configurazione CORS e flusso completo di interazione).
+- Una sezione finale sull’integrazione con un backend Node.js (modello `User`, controller REST, configurazione CORS e flusso completo di interazione).
 
 ## Configurazione di HttpClient in Angular 20 (provideHttpClient)
 
@@ -16,22 +16,27 @@ funzione di provider `provideHttpClient()`. Questa funzione registra il servizio
 
 Nel file `main.ts` della tua applicazione, utilizza `bootstrapApplication` (fornito da Angular a partire
 dalla versione 14) per avviare l’app senza NgModule, e passa `provideHttpClient()` tra i provider. In
-questo modo HttpClient sarà disponibile globalmente. Ecco un esempio di `main.ts`:
+questo modo HttpClient sarà disponibile globalmente. Ecco un esempio di `app.config.ts`:
 
 ```typescript
-import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
-import { AppComponent } from './app.component'; // componente root standalone
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
 
-bootstrapApplication(AppComponent, {
-    providers: [
-      provideHttpClient()
-    ]
-});
+import { routes } from './app.routes';
+import { provideHttpClient } from '@angular/common/http';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes),
+    provideHttpClient()
+  ]
+};
 ```
 
 Nel codice sopra, `provideHttpClient()` configura il servizio `HttpClient` affinché sia disponibile per l’injection in tutta l’applicazione . In Angular  18+ questo approccio è preferito all’importazione di
-`HttpClientModule` , che è deprecato. Se stessimo usando ancora un approccio basato su NgModule, potremmo inserire `provideHttpClient()` nell’array `providers` di AppModule, ma nel caso di bootstrap standalone lo passiamo direttamente a `bootstrapApplication`.
+`HttpClientModule` , che è deprecato. Se stessimo usando ancora un approccio basato su NgModule, potremmo inserire `provideHttpClient()` nell’array `providers` di AppModule, ma nel caso di bootstrap standalone lo passiamo direttamente a `appConfig: ApplicationConfig`.
 
 >**Nota**: È possibile estendere `provideHttpClient()` con opzioni aggiuntive (ad esempio `withInterceptors` , `withFetch` , ecc.) per configurare il comportamento del client HTTP, ma per scopi di questa guida useremo la configurazione base
 
@@ -140,6 +145,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from './user.service';
 import { User } from './user.model';
+
 @Component({
  standalone: true,
  selector: 'app-users',
@@ -152,7 +158,7 @@ import { User } from './user.model';
      </li>
     </ul>
 
-  <h3>Aggiungi Utente</h3>v
+  <h3>Aggiungi Utente</h3>
   <form (ngSubmit)="addUser()">
     <input [(ngModel)]="newUser.name" name="name" placeholder="Nome" required />
     <input [(ngModel)]="newUser.email" name="email" placeholder="Email" required />
@@ -545,4 +551,111 @@ app.delete('/api/tasks/:id', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server Express + MySQL su http://localhost:${port}`);
 });
+```
+
+## Service Angular per gestire le Task
+
+Crea un file `task.service.ts`:
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, catchError, throwError } from 'rxjs';
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
+export class TaskService {
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:8080/api/tasks';
+
+  // Recupera tutte le task
+  getTasks(): Observable<Task[]> {
+    return this.http.get<Task[]>(this.apiUrl).pipe(
+      catchError(err => {
+        console.error('Errore recupero tasks', err);
+        return throwError(() => new Error('Errore nel recupero delle tasks.'));
+      })
+    );
+  }
+
+  // Inserisce una nuova task
+  addTask(task: Omit<Task, 'id' | 'completed'>): Observable<Task> {
+    return this.http.post<Task>(this.apiUrl, task).pipe(
+      catchError(err => {
+        console.error('Errore inserimento task', err);
+        return throwError(() => new Error('Errore nell\'inserimento della task.'));
+      })
+    );
+  }
+}
+```
+
+---
+
+## Component Standalone per inserire una Task
+
+Crea un file `add-task.component.ts`:
+
+```typescript
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TaskService, Task } from './task.service';
+
+@Component({
+  standalone: true,
+  selector: 'app-add-task',
+  imports: [CommonModule, FormsModule],
+  template: `
+    <h3>Aggiungi Nuova Task</h3>
+    <form (ngSubmit)="addTask()">
+      <input [(ngModel)]="title" name="title" placeholder="Titolo" required />
+      <input [(ngModel)]="description" name="description" placeholder="Descrizione" required />
+      <button type="submit">Aggiungi Task</button>
+    </form>
+    <div *ngIf="errorMsg" style="color:red">{{ errorMsg }}</div>
+    <ul>
+      <li *ngFor="let task of tasks">
+        {{ task.title }} - {{ task.description }} [{{ task.completed ? 'Completata' : 'Da fare' }}]
+      </li>
+    </ul>
+  `
+})
+export class AddTaskComponent {
+  private taskService = inject(TaskService);
+  title = '';
+  description = '';
+  tasks: Task[] = [];
+  errorMsg = '';
+
+  constructor() {
+    this.loadTasks();
+  }
+
+  loadTasks() {
+    this.taskService.getTasks().subscribe({
+      next: tasks => this.tasks = tasks,
+      error: err => this.errorMsg = err.message
+    });
+  }
+
+  addTask() {
+    if (!this.title.trim() || !this.description.trim()) return;
+    this.taskService.addTask({ title: this.title, description: this.description }).subscribe({
+      next: task => {
+        this.tasks.push(task);
+        this.title = '';
+        this.description = '';
+        this.errorMsg = '';
+      },
+      error: err => this.errorMsg = err.message
+    });
+  }
+}
 ```
