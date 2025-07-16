@@ -668,3 +668,29 @@ export class AddTaskComponent {
 }
 
 ```
+
+---
+
+## 🎯 Esercizio Completo: Sistema di Gestione Biblioteca (Library Management System)
+
+### Obiettivo dell'Esercizio
+
+Creare un'applicazione completa che integri:
+
+- **Frontend Angular 20 standalone** con HttpClient
+- **Backend Node.js/Express** con database MySQL
+- **Operazioni CRUD complete** (Create, Read, Update, Delete)
+- **Gestione errori** con RxJS
+- **Interfaccia utente interattiva**
+
+### 📋 Scenario
+
+Gestire una biblioteca digitale dove è possibile:
+
+- Visualizzare tutti i libri
+- Aggiungere nuovi libri
+- Modificare lo stato di disponibilità
+- Eliminare libri
+- Cercare libri per titolo o autore
+
+---
