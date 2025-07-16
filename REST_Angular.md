@@ -429,6 +429,8 @@ app.route('/api/documents/:id')
 
 ---
 
+## Applicativo Task Manager
+
 ## Connessione tra backend Node.js e server MySQL
 
 ## 1. Installazione dipendenze
@@ -436,7 +438,7 @@ app.route('/api/documents/:id')
 Dentro la cartella del tuo backend Node.js:
 
 ```bash
-npm install mysql2
+npm install mysql2 express cors body-parser
 ```
 
 mysql2 è una libreria moderna e performante per connettersi a MySQL.
@@ -451,9 +453,10 @@ const mysql = require('mysql2');
 
 // Crea il pool di connessioni
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',        // il tuo utente MySQL
-  password: 'password', // la tua password MySQL
+  host: 'localhost',    // il tuo host MySQL
+  port: 3306,          // la porta MySQL
+  user: 'root',         // il tuo utente MySQL
+  password: 'root', // la tua password MySQL
   database: 'todo_db'   // il database che userai
 });
 
@@ -498,10 +501,14 @@ app.use(bodyParser.json());
 // GET tutti i task
 app.get('/api/tasks', async (req, res) => {
   try {
+    console.log('Tentativo di recupero tasks...');
     const [rows] = await db.query('SELECT * FROM tasks');
+    console.log('Tasks recuperate:', rows);
     res.json(rows);
   } catch (error) {
-    console.error('Errore GET tasks', error);
+    console.error('Errore GET tasks - Dettagli completi:', error);
+    console.error('Errore message:', error.message);
+    console.error('Errore code:', error.code);
     res.status(500).json({ error: 'Errore nel recupero tasks' });
   }
 });
@@ -551,6 +558,7 @@ app.delete('/api/tasks/:id', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server Express + MySQL su http://localhost:${port}`);
 });
+
 ```
 
 ## Service Angular per gestire le Task
@@ -606,7 +614,7 @@ Crea un file `add-task.component.ts`:
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TaskService, Task } from './task.service';
+import { TaskService, Task } from '../task-service';
 
 @Component({
   standalone: true,
@@ -658,4 +666,5 @@ export class AddTaskComponent {
     });
   }
 }
+
 ```
