@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError, Observable } from 'rxjs';
 import { User } from './user.model'; // interfaccia User (id, name, email,ecc.)
@@ -12,6 +12,10 @@ export class UserService
 
   private http = inject(HttpClient); // ottiene istanza di HttpClient
   private apiUrl = 'http://localhost:8080/api/users'
+
+
+  // GET: resource Signal-based, si ricarica chiamando .reload()
+  usersResource = httpResource<User[]>(() => this.apiUrl);
 
    // GET: recupera lista di utenti
   getUsers(): Observable<User[]>{
@@ -32,18 +36,18 @@ export class UserService
     return this.http.post<User>(this.apiUrl, user).pipe(
 
       catchError(err => {
-        console.error('Errore nell’aggiunta utente', err);
-        return throwError(() => new Error('Errore nell’aggiunta dell’utente.'));
+        console.error("Errore nell'aggiunta utente", err);
+        return throwError(() => new Error("Errore nell'aggiunta dell'utente."));
       })
     );
   }
 
   removeUser(id: number): Observable<User>
   {
-    return this.http.delete<User>(`${this.apiUrl}/${id}}`).pipe(
+    return this.http.delete<User>(`${this.apiUrl}/${id}`).pipe(
       catchError(err => {
-        console.error('Errore nella cancellazione utente', err);
-        return throwError(() => new Error('Errore nella cancellazione dell’utente.'));
+        console.error("Errore nella cancellazione utente", err);
+        return throwError(() => new Error("Errore nella cancellazione dell'utente."));
       })
     );
   }

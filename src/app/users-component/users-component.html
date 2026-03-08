@@ -1,8 +1,27 @@
 <h2>Lista Utenti</h2>
+<!-- Signal GET -->
+@if (userService.usersResource.isLoading()) {
+  <p>Caricamento...</p>
+}
+@if (userService.usersResource.error()) {
+  <p style="color:red">Errore nel caricamento degli utenti.</p>
+}
+
 <ul>
-  <li *ngFor="let user of users">
-    {{user.id}} {{ user.name }} ({{ user.email }})
-  </li>
+  @for (user of (userService.usersResource.value() ?? []); track user.id) {
+    <li>{{user.id}} {{ user.name }} ({{ user.email }})</li>
+  } @empty {
+    <li>Nessun utente trovato.</li>
+  }
+</ul>
+
+<!-- Observable GET -->
+<ul>
+  @for (user of users(); track user.id) {
+    <li>{{user.id}} {{ user.name }} ({{ user.email }})</li>
+  } @empty {
+    <li>Nessun utente trovato.</li>
+  }
 </ul>
 
 <h3>Aggiungi Utente</h3>
