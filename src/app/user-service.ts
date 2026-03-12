@@ -9,15 +9,13 @@ import { User } from './user.model'; // interfaccia User (id, name, email,ecc.)
 })
 export class UserService
 {
-
   private http = inject(HttpClient); // ottiene istanza di HttpClient
   private apiUrl = 'http://localhost:8080/api/users'
-
 
   // GET: resource Signal-based, si ricarica chiamando .reload()
   usersResource = httpResource<User[]>(() => this.apiUrl);
 
-   // GET: recupera lista di utenti
+  // GET: recupera lista di utenti
   getUsers(): Observable<User[]>{
 
     return this.http.get<User[]>(this.apiUrl).pipe(

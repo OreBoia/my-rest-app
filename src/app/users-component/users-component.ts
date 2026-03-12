@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../user-service';
 import { User } from '../user.model';
@@ -10,16 +10,17 @@ import { User } from '../user.model';
   templateUrl: './users-component.html',
   styleUrl: './users-component.css'
 })
-export class UsersComponent
+export class UsersComponent implements OnInit
 {
   userService = inject(UserService);
-  
+
   users = signal<User[]>([]);
+
   newUser: User = {id: 0, name: '', email: ''};
+
   userIdToRemove = 0;
 
-  constructor()
-  {
+  ngOnInit(): void {
     // Recupera la lista utenti all'inizializzazione del componente
     this.userService.getUsers().subscribe({
       next: (data) => this.users.set(data),
@@ -33,6 +34,8 @@ export class UsersComponent
     this.userService.addUser(this.newUser).subscribe({
       next: (savedUser) =>
         {
+          //...list è l'operatore spread (diffusione) di JavaScript/TypeScript.
+          //crea un nuovo array che contiene tutti gli elementi di list seguiti da savedUser.
           this.users.update(list => [...list, savedUser]);
           this.newUser = {id: 0, name: '', email: ''};
         },
@@ -43,7 +46,10 @@ export class UsersComponent
   removeUser(id: number)
   {
     this.userService.removeUser(id).subscribe({
-      next: () => this.users.update(list => list.filter(user => user.id !== id)),
+      next: (deletedUser) => {
+        this.users.update(list => list.filter(user => user.id !== id))
+        console.log(deletedUser)
+      },
       error: err => alert(err.message)
     });
   }

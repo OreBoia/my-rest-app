@@ -33,14 +33,14 @@ app.delete('/api/users/:id', (req, res) => {
   const index = users.findIndex(user => user.id === id)
 
   if(index !== -1)
-    {
-      const deleted = users.splice(index, 1)[0];
-      res.json(deleted);
-    }
-    esle
-    {
-      res.status(404).json({error: 'User non trovato'})
-    }
+  {
+    const deleted = users.splice(index, 1)[0];
+    res.json(deleted);
+  }
+  else
+  {
+    res.status(404).json({error: 'User non trovato'})
+  }
 });
 
 app.listen(port, () => {

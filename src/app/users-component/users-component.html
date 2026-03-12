@@ -19,7 +19,9 @@
 <ul>
   @for (user of users(); track user.id) {
     <li>{{user.id}} {{ user.name }} ({{ user.email }})</li>
-  } @empty {
+  }
+  @empty
+  {
     <li>Nessun utente trovato.</li>
   }
 </ul>
